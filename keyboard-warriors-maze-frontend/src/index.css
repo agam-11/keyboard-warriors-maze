@@ -1,0 +1,23 @@
+/* client/src/index.css */
+
+@import "tailwindcss";
+
+@theme {
+  /* "Adrenaline Rush" Palette */
+  --color-background: #0a0a0a; /* Deep Black: Consistent base for the app */
+  --color-foreground: #f0e68c; /* Pale Yellow: Soft, readable text */
+  --color-primary: #ff8c00; /* Electric Orange: Main interactive elements, player character */
+  --color-destructive: #ff0000; /* Hot Red: Errors, warnings, wall collision flash */
+  --color-accent: #ffd700; /* Cyber Yellow: Highlights, goal tile, secondary info */
+  --color-muted: #4b0082; /* Dark Purple: Subtle UI elements, secondary borders */
+  --color-border: #cc5500; /* Burnt Orange: Maze walls and primary borders */
+  --color-ring: #ff8c00; /* Electric Orange: Focus rings on interactive elements */
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: "Fira Code", "Source Code Pro", monospace;
+  }
+}
