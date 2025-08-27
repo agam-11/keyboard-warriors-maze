@@ -15,7 +15,8 @@ const Player = ({ position, cellSize }) => {
     left: `${position.col * cellSize}px`,
     width: `${cellSize}px`,
     height: `${cellSize}px`,
-    transition: "top 0.2s ease-in-out, left 0.2s ease-in-out",
+    transition:
+      "top 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
   };
 
   return (

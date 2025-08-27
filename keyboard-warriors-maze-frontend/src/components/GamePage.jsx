@@ -5,8 +5,17 @@ import Maze from "./Maze";
 import CodeEditor from "./CodeEditor";
 import Player from "./Player";
 
-// A solvable maze blueprint.
-const sampleMaze = [
+const API_URL = "http://localhost:3001";
+
+const practiceMaze = [
+  ["S", 0, 1, 0, 0],
+  [1, 0, 1, 0, 1],
+  [0, 0, 0, 0, 0],
+  [0, 1, 1, 1, 1],
+  [0, 0, 0, 0, "E"],
+];
+
+const mainMaze = [
   ["S", 0, 0, 1, 0, 0, 0, 1, 0, 0],
   [1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
   [0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
@@ -19,13 +28,10 @@ const sampleMaze = [
   [1, 1, 0, 0, 0, 1, 1, 0, 1, "E"],
 ];
 
-// Helper functions to find start and end positions
 const findPosition = (maze, char) => {
   for (let r = 0; r < maze.length; r++) {
     for (let c = 0; c < maze[r].length; c++) {
-      if (maze[r][c] === char) {
-        return { row: r, col: c };
-      }
+      if (maze[r][c] === char) return { row: r, col: c };
     }
   }
   return null;
@@ -33,8 +39,10 @@ const findPosition = (maze, char) => {
 
 const GamePage = () => {
   const [code, setCode] = useState("");
-  const startPosition = useMemo(() => findPosition(sampleMaze, "S"), []);
-  const endPosition = useMemo(() => findPosition(sampleMaze, "E"), []);
+  const [mazeData, setMazeData] = useState(practiceMaze);
+
+  const startPosition = useMemo(() => findPosition(mazeData, "S"), [mazeData]);
+  const endPosition = useMemo(() => findPosition(mazeData, "E"), [mazeData]);
 
   const [playerPosition, setPlayerPosition] = useState(startPosition);
   const mazeContainerRef = useRef(null);
@@ -42,27 +50,71 @@ const GamePage = () => {
 
   const [hasWon, setHasWon] = useState(false);
   const [time, setTime] = useState(0);
+  const [isEventLive, setIsEventLive] = useState(false);
+  const [isColliding, setIsColliding] = useState(false); // State for wall collision animation
 
   useEffect(() => {
-    const timerInterval = setInterval(() => {
-      if (!hasWon) {
-        setTime((prevTime) => prevTime + 1);
+    const fetchEventState = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/event-state`);
+        const state = await response.json();
+
+        if (!state.is_practice_active) {
+          setMazeData(mainMaze);
+          setIsEventLive(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch event state:", error);
       }
-    }, 1000);
+    };
+    fetchEventState();
+  }, []);
+
+  useEffect(() => {
+    setPlayerPosition(findPosition(mazeData, "S"));
+  }, [mazeData]);
+
+  useEffect(() => {
+    let timerInterval;
+    if (isEventLive && !hasWon) {
+      timerInterval = setInterval(() => setTime((prev) => prev + 1), 1000);
+    }
     return () => clearInterval(timerInterval);
-  }, [hasWon]);
+  }, [isEventLive, hasWon]);
 
   useEffect(() => {
     const calculateCellSize = () => {
       if (mazeContainerRef.current) {
         const mazeWidth = mazeContainerRef.current.offsetWidth;
-        setCellSize(mazeWidth / sampleMaze[0].length);
+        setCellSize(mazeWidth / mazeData[0].length);
       }
     };
     calculateCellSize();
     window.addEventListener("resize", calculateCellSize);
     return () => window.removeEventListener("resize", calculateCellSize);
-  }, []);
+  }, [mazeData]);
+
+  const submitScore = async (finalTime) => {
+    const token = localStorage.getItem("supabase-token");
+    if (!token) {
+      console.error("Not logged in. Cannot submit score.");
+      return;
+    }
+    try {
+      await fetch(`${API_URL}/api/finish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ time: finalTime, token: token }),
+      });
+    } catch (error) {
+      console.error("Failed to submit score:", error);
+    }
+  };
+
+  const triggerCollision = () => {
+    setIsColliding(true);
+    setTimeout(() => setIsColliding(false), 300); // Animation duration
+  };
 
   const movePlayer = (direction, currentPos) => {
     let newPos = { ...currentPos };
@@ -73,30 +125,30 @@ const GamePage = () => {
 
     if (
       newPos.row < 0 ||
-      newPos.row >= sampleMaze.length ||
+      newPos.row >= mazeData.length ||
       newPos.col < 0 ||
-      newPos.col >= sampleMaze[0].length ||
-      sampleMaze[newPos.row][newPos.col] === 1
+      newPos.col >= mazeData[0].length ||
+      mazeData[newPos.row][newPos.col] === 1
     ) {
+      triggerCollision(); // Trigger the shake animation
       return currentPos;
     }
 
     if (newPos.row === endPosition.row && newPos.col === endPosition.col) {
       setHasWon(true);
+      if (isEventLive) {
+        submitScore(time + 1);
+      }
     }
     return newPos;
   };
 
-  // --- FIXED: Shift+Enter Replay Logic ---
   const executeCommands = (commands) => {
     if (hasWon) return;
-
-    // Reset player to the start immediately for visual feedback
     setPlayerPosition(startPosition);
     let currentPos = { ...startPosition };
-    const moveDelay = 150; // ms between each move
+    const moveDelay = 150;
 
-    // Execute each command with a delay to create an animation
     commands.forEach((command, index) => {
       setTimeout(() => {
         currentPos = movePlayer(command, currentPos);
@@ -143,16 +195,24 @@ const GamePage = () => {
   };
 
   return (
-    <main className="flex flex-col md:flex-row h-screen w-full bg-background p-4 gap-4 relative">
-      {/* --- NEW: Win Message Overlay --- */}
+    <main
+      className={`flex flex-col md:flex-row h-screen w-full bg-background p-4 gap-4 relative ${
+        isColliding ? "animate-shake" : ""
+      }`}
+    >
       {hasWon && (
-        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
-          <h1 className="text-6xl font-bold text-accent animate-pulse">
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 scanlines">
+          <h1
+            className="text-6xl font-bold text-accent animate-glitch"
+            data-text="ACCESS GRANTED"
+          >
             ACCESS GRANTED
           </h1>
-          <p className="text-2xl text-foreground mt-4">
-            Final Time: {formatTime(time)}
-          </p>
+          {isEventLive && (
+            <p className="text-2xl text-foreground mt-4">
+              Final Time: {formatTime(time)}
+            </p>
+          )}
         </div>
       )}
 
@@ -160,8 +220,8 @@ const GamePage = () => {
         ref={mazeContainerRef}
         className="relative flex-1 flex items-center justify-center border-2 border-border rounded-lg p-4 bg-black/30"
       >
-        <Maze mazeData={sampleMaze} />
-        {cellSize > 0 && (
+        <Maze mazeData={mazeData} />
+        {cellSize > 0 && playerPosition && (
           <Player position={playerPosition} cellSize={cellSize} />
         )}
       </div>
@@ -169,7 +229,7 @@ const GamePage = () => {
       <div className="flex-1 flex flex-col border-2 border-border rounded-lg p-2 bg-black/30 gap-2">
         <div className="flex justify-between items-center p-2 bg-black/50 rounded-md">
           <h2 className="text-lg font-bold text-accent tracking-widest">
-            TIMER
+            {isEventLive ? "TIMER" : "PRACTICE MODE"}
           </h2>
           <span className="text-2xl font-bold text-foreground font-mono">
             {formatTime(time)}
