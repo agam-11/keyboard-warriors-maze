@@ -5,7 +5,7 @@ import Maze from "./Maze";
 import CodeEditor from "./CodeEditor";
 import Player from "./Player";
 
-const API_URL = "http://localhost:3001";
+const API_URL = "https://keyboard-warriors-kdgf.onrender.com";
 
 const practiceMaze = [
   ["S", 0, 1, 0, 0],

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 // The API endpoint for our Express server
-const API_URL = "http://localhost:3001";
+const API_URL = "https://keyboard-warriors-kdgf.onrender.com";
 
 /**
  * LeaderboardPage Component
