@@ -39,7 +39,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-background">
+    <div className="flex items-center justify-center h-screen bg-background scanlines">
       <div className="w-full max-w-md p-8 space-y-8 bg-black/30 border-2 border-border rounded-lg">
         <div>
           <h2 className="text-center text-4xl font-extrabold text-primary tracking-widest">

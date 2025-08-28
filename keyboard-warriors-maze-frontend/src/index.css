@@ -4,14 +4,14 @@
 
 @theme {
   /* "Adrenaline Rush" Palette */
-  --color-background: #0a0a0a; /* Deep Black: Consistent base for the app */
-  --color-foreground: #f0e68c; /* Pale Yellow: Soft, readable text */
-  --color-primary: #ff8c00; /* Electric Orange: Main interactive elements, player character */
-  --color-destructive: #ff0000; /* Hot Red: Errors, warnings, wall collision flash */
-  --color-accent: #ffd700; /* Cyber Yellow: Highlights, goal tile, secondary info */
-  --color-muted: #4b0082; /* Dark Purple: Subtle UI elements, secondary borders */
-  --color-border: #cc5500; /* Burnt Orange: Maze walls and primary borders */
-  --color-ring: #ff8c00; /* Electric Orange: Focus rings on interactive elements */
+  --color-background: #0a0a0a;
+  --color-foreground: #f0e68c;
+  --color-primary: #ff8c00;
+  --color-destructive: #ff0000;
+  --color-accent: #ffd700;
+  --color-muted: #4b0082;
+  --color-border: #cc5500;
+  --color-ring: #ff8c00;
 }
 
 @layer base {
@@ -22,62 +22,68 @@
   }
 }
 
-/* animations */
-/* client/src/index.css */
+/* --- ANIMATIONS --- */
 
-/* ... keep all your existing @theme and @layer base styles ... */
+.animate-shake {
+  animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
 
-@layer utilities {
-  .animate-shake {
-    animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  }
+.animate-glitch {
+  position: relative;
+}
+.animate-glitch::before,
+.animate-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+.animate-glitch::before {
+  left: 2px;
+  text-shadow: -2px 0 #ff00ff;
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+}
+.animate-glitch::after {
+  left: -2px;
+  text-shadow: -2px 0 #00ffff;
+  animation: glitch-anim-2 2s infinite linear alternate-reverse;
+}
 
-  .animate-glitch {
-    position: relative;
-  }
-  .animate-glitch::before,
-  .animate-glitch::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0a0a0a;
-    overflow: hidden;
-  }
-  .animate-glitch::before {
-    left: 2px;
-    text-shadow: -2px 0 #ff00ff;
-    animation: glitch-anim-1 2s infinite linear alternate-reverse;
-  }
-  .animate-glitch::after {
-    left: -2px;
-    text-shadow: -2px 0 #00ffff;
-    animation: glitch-anim-2 2s infinite linear alternate-reverse;
-  }
-
-  .scanlines {
-    position: relative;
-    overflow: hidden;
-  }
-  .scanlines::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.5) 50%,
-      rgba(0, 0, 0, 0) 100%
+/* --- NEW "DIGITAL GRID" BACKGROUND --- */
+/* This replaces the old .scanlines effect */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+.scanlines::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  /* Creates a grid using two repeating linear gradients */
+  background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 49px,
+      var(--color-primary) 50px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 49px,
+      var(--color-primary) 50px
     );
-    background-size: 100% 4px;
-    animation: scan 2s linear infinite;
-    opacity: 0.3;
-  }
+  background-size: 50px 50px;
+  opacity: 0.15;
+  pointer-events: none;
+  /* Animates the grid's position */
+  animation: grid-move 10s linear infinite;
 }
 
 @keyframes shake {
@@ -142,11 +148,12 @@
   }
 }
 
-@keyframes scan {
+/* New keyframe for the grid animation */
+@keyframes grid-move {
   from {
     background-position: 0 0;
   }
   to {
-    background-position: 0 100px;
+    background-position: 50px 50px;
   }
 }

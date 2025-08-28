@@ -37,6 +37,35 @@ const findPosition = (maze, char) => {
   return null;
 };
 
+// Helper component for the win screen
+const WinOverlay = ({ isEventLive, time }) => {
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = (seconds % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+  };
+
+  const message = isEventLive ? "ACCESS GRANTED" : "PRACTICE COMPLETE";
+
+  return (
+    <div className="w-full h-screen relative overflow-hidden bg-background flex flex-col items-center justify-center ">
+      <h1
+        className="text-6xl font-bold text-accent animate-glitch"
+        data-text={message}
+      >
+        {message}
+      </h1>
+      {isEventLive && (
+        <p className="text-2xl text-foreground mt-4">
+          Final Time: {formatTime(time)}
+        </p>
+      )}
+    </div>
+  );
+};
+
 const GamePage = () => {
   const [code, setCode] = useState("");
   const [mazeData, setMazeData] = useState(practiceMaze);
@@ -51,7 +80,7 @@ const GamePage = () => {
   const [hasWon, setHasWon] = useState(false);
   const [time, setTime] = useState(0);
   const [isEventLive, setIsEventLive] = useState(false);
-  const [isColliding, setIsColliding] = useState(false); // State for wall collision animation
+  const [isColliding, setIsColliding] = useState(false);
 
   useEffect(() => {
     const fetchEventState = async () => {
@@ -113,7 +142,7 @@ const GamePage = () => {
 
   const triggerCollision = () => {
     setIsColliding(true);
-    setTimeout(() => setIsColliding(false), 300); // Animation duration
+    setTimeout(() => setIsColliding(false), 300);
   };
 
   const movePlayer = (direction, currentPos) => {
@@ -130,7 +159,7 @@ const GamePage = () => {
       newPos.col >= mazeData[0].length ||
       mazeData[newPos.row][newPos.col] === 1
     ) {
-      triggerCollision(); // Trigger the shake animation
+      triggerCollision();
       return currentPos;
     }
 
@@ -194,50 +223,42 @@ const GamePage = () => {
     return `${mins}:${secs}`;
   };
 
+  // If the player has won, show the overlay.
+  if (hasWon) {
+    return <WinOverlay isEventLive={isEventLive} time={time} />;
+  }
+
+  // Otherwise, show the main game view.
   return (
-    <main
-      className={`flex flex-col md:flex-row h-screen w-full bg-background p-4 gap-4 relative ${
+    <div
+      className={`w-full h-screen bg-background ${
         isColliding ? "animate-shake" : ""
       }`}
     >
-      {hasWon && (
-        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 scanlines">
-          <h1
-            className="text-6xl font-bold text-accent animate-glitch"
-            data-text="ACCESS GRANTED"
-          >
-            ACCESS GRANTED
-          </h1>
-          {isEventLive && (
-            <p className="text-2xl text-foreground mt-4">
-              Final Time: {formatTime(time)}
-            </p>
+      <main className="flex flex-col md:flex-row h-full w-full p-4 gap-4">
+        <div
+          ref={mazeContainerRef}
+          className="relative flex-1 flex items-center justify-center border-2 border-border rounded-lg p-4 bg-black/30"
+        >
+          <Maze mazeData={mazeData} />
+          {cellSize > 0 && playerPosition && (
+            <Player position={playerPosition} cellSize={cellSize} />
           )}
         </div>
-      )}
 
-      <div
-        ref={mazeContainerRef}
-        className="relative flex-1 flex items-center justify-center border-2 border-border rounded-lg p-4 bg-black/30"
-      >
-        <Maze mazeData={mazeData} />
-        {cellSize > 0 && playerPosition && (
-          <Player position={playerPosition} cellSize={cellSize} />
-        )}
-      </div>
-
-      <div className="flex-1 flex flex-col border-2 border-border rounded-lg p-2 bg-black/30 gap-2">
-        <div className="flex justify-between items-center p-2 bg-black/50 rounded-md">
-          <h2 className="text-lg font-bold text-accent tracking-widest">
-            {isEventLive ? "TIMER" : "PRACTICE MODE"}
-          </h2>
-          <span className="text-2xl font-bold text-foreground font-mono">
-            {formatTime(time)}
-          </span>
+        <div className="flex-1 flex flex-col border-2 border-border rounded-lg p-2 bg-black/30 gap-2">
+          <div className="flex justify-between items-center p-2 bg-black/50 rounded-md">
+            <h2 className="text-lg font-bold text-accent tracking-widest">
+              {isEventLive ? "TIMER" : "PRACTICE MODE"}
+            </h2>
+            <span className="text-2xl font-bold text-foreground font-mono">
+              {formatTime(time)}
+            </span>
+          </div>
+          <CodeEditor code={code} setCode={setCode} onKeyDown={handleKeyDown} />
         </div>
-        <CodeEditor code={code} setCode={setCode} onKeyDown={handleKeyDown} />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 };
 
