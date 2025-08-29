@@ -1,138 +1,195 @@
-// server/index.js
-
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-require("dotenv").config();
 
-// --- 1. INITIAL SETUP ---
+// --- Server and Supabase Setup ---
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-// --- 2. MIDDLEWARE ---
-app.use(cors());
+// --- FIX: Configure CORS to allow the Authorization header ---
+const corsOptions = {
+  origin: "*", // In production, you should restrict this to your frontend's domain
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ["Content-Type", "Authorization"], // Explicitly allow Authorization
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
-// --- 3. SUPABASE CLIENT ---
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase URL or Anon Key is missing.");
-  process.exit(1);
+if (supabase) {
+  console.log("Supabase client initialized successfully.");
+} else {
+  console.error("Failed to initialize Supabase client.");
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-console.log("Supabase client initialized successfully.");
+// --- Hardcoded Maze Collection ---
+const mazes = {
+  1: [
+    ["S", 0, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, "E"],
+    [1, 1, 1, 1, 1, 1, 1],
+  ],
+  2: [
+    ["S", 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, "E"],
+  ],
+  3: [
+    [1, 1, 1, 1, 1, 1, "E"],
+    [1, 0, 0, 0, 1, 0, 0],
+    [1, 0, 1, 0, 1, 0, 1],
+    ["S", 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+  ],
+  4: [
+    ["S", 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, "E"],
+  ],
+};
 
-// --- 4. API ENDPOINTS ---
-
-app.get("/", (req, res) => {
-  res.send("Keyboard Warriors API is running!");
-});
-
+// --- API Endpoints ---
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required." });
-  }
   try {
+    const { email, password } = req.body;
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) {
-      return res.status(401).json({ error: "Invalid login credentials." });
-    }
-    res.status(200).json({ session: data.session });
-  } catch (err) {
-    res.status(500).json({ error: "An unexpected error occurred." });
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Login Error:", error.message);
+    res.status(401).json({ error: error.message });
   }
 });
 
-// --- NEW ENDPOINTS ---
-
-/**
- * GET /api/event-state
- * Fetches the current state of the event from the 'event_control' table.
- * This is public data that anyone can read.
- */
 app.get("/api/event-state", async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "No token provided." });
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+    if (userError) {
+      console.error("Auth Error on /event-state:", userError.message);
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    const { data: eventData, error: eventError } = await supabase
       .from("event_control")
       .select("*")
-      .eq("id", 1) // Select the single row
-      .single(); // Expect only one result
+      .single();
+    if (eventError) throw eventError;
 
-    if (error) throw error;
-    res.status(200).json(data);
+    const isEventLive = !eventData.is_practice_active;
+    let hasCompleted = false;
+
+    if (isEventLive) {
+      const { data: scoreData, error: scoreError } = await supabase
+        .from("leaderboard")
+        .select("id", { count: "exact" })
+        .eq("user_id", user.id);
+      if (scoreError) throw scoreError;
+      if (scoreData && scoreData.length > 0) {
+        hasCompleted = true;
+      }
+    }
+
+    const mazeNumber = eventData.selected_maze_number;
+    const selectedMaze = mazes[mazeNumber] || mazes[1];
+
+    res.json({
+      isEventLive,
+      startTime: eventData.main_event_start_time,
+      maze: selectedMaze,
+      hasCompleted,
+    });
   } catch (error) {
-    console.error("Error fetching event state:", error.message);
-    res.status(500).json({ error: "Failed to fetch event state." });
+    console.error("Event State Error:", error.message);
+    res.status(500).json({ error: "Could not fetch event state." });
   }
 });
 
-/**
- * GET /api/leaderboard
- * Fetches the top scores from the leaderboard.
- * This is public data.
- */
-app.get("/api/leaderboard", async (req, res) => {
-  try {
-    // Note: We need to set up an RPC function in Supabase for this to work with user emails
-    // For now, we'll just get the user_id.
-    const { data, error } = await supabase
-      .from("leaderboard")
-      .select("user_id, finish_time_seconds")
-      .order("finish_time_seconds", { ascending: true })
-      .limit(20);
-
-    if (error) throw error;
-    res.status(200).json(data);
-  } catch (error) {
-    console.error("Error fetching leaderboard:", error.message);
-    res.status(500).json({ error: "Failed to fetch leaderboard." });
-  }
-});
-
-/**
- * POST /api/finish
- * Submits a user's final time to the leaderboard.
- * This is a protected action and requires a valid user session.
- */
 app.post("/api/finish", async (req, res) => {
-  const { time, token } = req.body;
-
-  if (!time || !token) {
-    return res.status(400).json({ error: "Time and user token are required." });
-  }
-
   try {
-    // 1. Authenticate the user with the provided token
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "No token provided." });
+
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ error: "Invalid or expired token." });
+      console.error("Auth Error on /finish:", userError.message);
+      return res.status(401).json({ error: "Invalid token." });
     }
 
-    // 2. Insert the score into the leaderboard
+    // Check if user has already submitted a score
+    const { data: existingScore, error: checkError } = await supabase
+      .from("leaderboard")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    if (checkError) throw checkError;
+    if (existingScore && existingScore.length > 0) {
+      return res.status(409).json({ error: "Score already submitted." });
+    }
+
+    const { time } = req.body;
     const { error: insertError } = await supabase
       .from("leaderboard")
-      .insert({ user_id: user.id, finish_time_seconds: time });
+      .insert([{ user_id: user.id, finish_time_seconds: time }]);
 
     if (insertError) throw insertError;
 
-    res.status(200).json({ message: "Score submitted successfully!" });
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Error submitting score:", error.message);
-    res.status(500).json({ error: "Failed to submit score." });
+    console.error("Finish API Error:", error);
+    res.status(500).json({ error: "Could not save score." });
   }
 });
 
-// --- 5. START SERVER ---
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("leaderboard")
+      .select("finish_time_seconds, created_at, profiles ( email )")
+      .order("finish_time_seconds", { ascending: true })
+      .limit(20);
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Leaderboard Error:", error);
+    res.status(500).json({ error: "Could not fetch leaderboard." });
+  }
 });
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () =>
+  console.log(`Server is running on http://localhost:${PORT}`)
+);

@@ -1,91 +1,102 @@
-// client/src/components/LeaderboardPage.jsx
-
 import React, { useState, useEffect } from "react";
 
-// The API endpoint for our Express server
-const API_URL = "https://keyboard-warriors-kdgf.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-/**
- * LeaderboardPage Component
- * Fetches and displays the top scores from the server.
- */
+// Helper function to format time from seconds to MM:SS
+const formatTime = (totalSeconds) => {
+  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
+    return "00:00";
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0"
+  )}`;
+};
+
 const LeaderboardPage = () => {
-  const [scores, setScores] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/leaderboard`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch leaderboard data.");
-      }
-      const data = await response.json();
-      // For now, we'll display user_id. We'll replace this with emails/usernames later.
-      setScores(data);
-    } catch (err) {
-      setError(err.message);
-      console.error(err);
-    }
-  };
-
-  // Fetch data on component mount and then poll every 5 seconds
   useEffect(() => {
-    fetchLeaderboard(); // Initial fetch
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/leaderboard`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch leaderboard data.");
+        }
+        const data = await response.json();
+        setLeaderboard(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard(); // Fetch initially
     const interval = setInterval(fetchLeaderboard, 5000); // Poll every 5 seconds
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
+    return () => clearInterval(interval); // Cleanup on component unmount
   }, []);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, "0");
-    const secs = (seconds % 60).toString().padStart(2, "0");
-    return `${mins}:${secs}`;
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background text-primary">
+        Loading Leaderboard...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background text-destructive">
+        Error: {error}
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-screen bg-background p-8 flex flex-col items-center">
-      <h1 className="text-5xl font-bold text-accent tracking-widest mb-8 animate-pulse">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines">
+      <h1 className="text-5xl font-extrabold text-center text-primary mb-8 tracking-widest">
         LEADERBOARD
       </h1>
-
-      {error && <p className="text-destructive">{error}</p>}
-
-      <div className="w-full max-w-4xl bg-black/30 border-2 border-border rounded-lg p-4">
+      <div className="max-w-4xl mx-auto overflow-hidden border-2 border-primary rounded-lg">
         <table className="w-full text-left">
-          <thead>
-            <tr className="border-b-2 border-muted">
-              <th className="p-4 text-primary text-lg">RANK</th>
-              <th className="p-4 text-primary text-lg">WARRIOR ID</th>
-              <th className="p-4 text-primary text-lg text-right">TIME</th>
+          <thead className="bg-primary/20 text-accent uppercase tracking-wider text-sm">
+            <tr>
+              <th className="p-4 text-center">Rank</th>
+              <th className="p-4">Player</th>
+              <th className="p-4 text-center">Time</th>
+              <th className="p-4 text-center hidden md:table-cell">
+                Submitted
+              </th>
             </tr>
           </thead>
           <tbody>
-            {scores.length > 0 ? (
-              scores.map((score, index) => (
-                <tr
-                  key={score.user_id + index}
-                  className="border-b border-muted/50"
-                >
-                  <td className="p-4 text-2xl font-bold">{index + 1}</td>
-                  {/* We truncate the long user_id for display purposes */}
-                  <td className="p-4 font-mono">
-                    {score.user_id.substring(0, 8)}...
-                  </td>
-                  <td className="p-4 font-mono text-2xl text-right">
-                    {formatTime(score.finish_time_seconds)}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="3" className="p-8 text-center text-foreground/50">
-                  No scores submitted yet...
+            {leaderboard.map((entry, index) => (
+              <tr key={index} className="border-b border-muted last:border-b-0">
+                <td className="p-4 text-center font-code text-2xl">
+                  {index + 1}
+                </td>
+                <td className="p-4 text-left text-foreground font-bold">
+                  {/* FIX: Safely access the email */}
+                  {entry.profiles?.email || "Anonymous"}
+                </td>
+                <td className="p-4 text-center font-code text-primary text-2xl">
+                  {/* FIX: Safely format the time */}
+                  {formatTime(entry.finish_time_seconds)}
+                </td>
+                <td className="p-4 text-center text-foreground/50 text-sm hidden md:table-cell">
+                  {/* FIX: Safely format the date, providing a fallback */}
+                  {entry.created_at
+                    ? new Date(entry.created_at).toLocaleString()
+                    : "N/A"}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>

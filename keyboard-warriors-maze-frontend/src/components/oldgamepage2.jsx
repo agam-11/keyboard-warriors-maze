@@ -39,7 +39,6 @@ const GamePage = () => {
 
   const mazeContainerRef = useRef(null);
   const cellSize = useRef(48);
-  const hasSubmitted = useRef(false); // FIX: Add a ref to act as a submission lock
 
   useEffect(() => {
     const fetchEventState = async () => {
@@ -123,8 +122,10 @@ const GamePage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // CORRECT: Send the token in the Authorization header
           Authorization: `Bearer ${token}`,
         },
+        // CORRECT: Only send the time in the body
         body: JSON.stringify({ time: timer }),
       });
     } catch (error) {
@@ -160,12 +161,8 @@ const GamePage = () => {
           newPos.row === endPosition.row &&
           newPos.col === endPosition.col
         ) {
-          // FIX: Check the lock before submitting
-          if (!hasSubmitted.current) {
-            hasSubmitted.current = true; // Set the lock immediately
-            setHasWon(true);
-            submitScore();
-          }
+          setHasWon(true);
+          submitScore();
         }
         return newPos;
       });
