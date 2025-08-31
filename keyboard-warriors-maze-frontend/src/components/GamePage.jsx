@@ -54,14 +54,29 @@ const GamePage = () => {
   const [isEventLive, setIsEventLive] = useState(false);
   const [timer, setTimer] = useState(0);
   const [shake, setShake] = useState(false);
+  const [showWarningBanner, setShowWarningBanner] = useState(false);
 
   const mazeContainerRef = useRef(null);
   const cellSize = useRef(48);
   const hasSubmitted = useRef(false); // FIX: Add a ref to act as a submission lock
+  const warningTimerRef = useRef(null);
 
   const [playerInfo] = useState(() =>
     JSON.parse(localStorage.getItem("playerInfo"))
   );
+
+  const showWarningBannerTemporarily = useCallback(() => {
+    // Clear any existing timer
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
+    
+    setShowWarningBanner(true);
+    warningTimerRef.current = setTimeout(() => {
+      setShowWarningBanner(false);
+      warningTimerRef.current = null;
+    }, 5000);
+  }, []);
 
   useEffect(() => {
     const fetchEventState = async () => {
@@ -157,6 +172,106 @@ const GamePage = () => {
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, [handleResize]);
+
+  // Prevent copy-paste during game (both practice and event modes)
+  useEffect(() => {
+    // Always prevent copy-paste when playing the game
+    if (!mazeData) return;
+
+    const preventCopyPaste = (e) => {
+      // Prevent Ctrl+C, Ctrl+V, Ctrl+A, Ctrl+X, Ctrl+Z, Ctrl+Y
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'a' || e.key === 'x' || e.key === 'z' || e.key === 'y')) {
+        e.preventDefault();
+        e.stopPropagation();
+        showWarningBannerTemporarily();
+        console.log('Copy-paste prevented during game mode');
+        return false;
+      }
+      // Prevent F12 (Developer Tools)
+      if (e.key === 'F12') {
+        e.preventDefault();
+        e.stopPropagation();
+        showWarningBannerTemporarily();
+        return false;
+      }
+      // Prevent Ctrl+Shift+I (Developer Tools)
+      if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        e.stopPropagation();
+        showWarningBannerTemporarily();
+        return false;
+      }
+      // Prevent Ctrl+Shift+J (Console)
+      if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+        e.preventDefault();
+        e.stopPropagation();
+        showWarningBannerTemporarily();
+        return false;
+      }
+      // Prevent Ctrl+U (View Source)
+      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+        e.stopPropagation();
+        showWarningBannerTemporarily();
+        return false;
+      }
+    };
+
+    const preventContextMenu = (e) => {
+      e.preventDefault();
+      showWarningBannerTemporarily();
+      return false;
+    };
+
+    const preventPaste = (e) => {
+      e.preventDefault();
+      showWarningBannerTemporarily();
+      return false;
+    };
+
+    const preventDragDrop = (e) => {
+      e.preventDefault();
+      showWarningBannerTemporarily();
+      return false;
+    };
+
+    // Add event listeners to prevent copy-paste and developer tools
+    document.addEventListener('keydown', preventCopyPaste, true);
+    document.addEventListener('contextmenu', preventContextMenu, true);
+    document.addEventListener('paste', preventPaste, true);
+    document.addEventListener('dragover', preventDragDrop, true);
+    document.addEventListener('drop', preventDragDrop, true);
+
+    // Disable text selection during event
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.mozUserSelect = 'none';
+    document.body.style.msUserSelect = 'none';
+
+    // Additional security measures
+    document.body.style.pointerEvents = 'auto'; // Keep interactions but disable selection
+
+    return () => {
+      // Cleanup event listeners
+      document.removeEventListener('keydown', preventCopyPaste, true);
+      document.removeEventListener('contextmenu', preventContextMenu, true);
+      document.removeEventListener('paste', preventPaste, true);
+      document.removeEventListener('dragover', preventDragDrop, true);
+      document.removeEventListener('drop', preventDragDrop, true);
+      
+      // Clear warning banner timer
+      if (warningTimerRef.current) {
+        clearTimeout(warningTimerRef.current);
+        warningTimerRef.current = null;
+      }
+      
+      // Restore text selection
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      document.body.style.mozUserSelect = '';
+      document.body.style.msUserSelect = '';
+    };
+  }, [mazeData, showWarningBannerTemporarily]);
 
   const submitScore = useCallback(async () => {
     console.log("submitScore called - checking conditions...");
@@ -357,13 +472,19 @@ const GamePage = () => {
 
   return (
     <div
-      className={`flex flex-col md:flex-row h-screen bg-background text-foreground p-4 gap-4 scanlines ${
+      className={`flex flex-col md:flex-row h-screen bg-background text-foreground p-4 gap-4 scanlines relative ${
         shake ? "animate-shake" : ""
       }`}
     >
+      {showWarningBanner && (
+        <div className="absolute top-0 left-0 right-0 bg-destructive text-white text-center py-2 px-4 z-30 font-bold animate-pulse transform transition-transform duration-300 ease-out">
+          🚫 GAME MODE: Copy-paste, right-click, and developer tools are disabled
+        </div>
+      )}
       <div
         ref={mazeContainerRef}
         className="w-full md:w-1/2 h-1/2 md:h-full flex items-center justify-center p-4 border-2 border-primary rounded-md"
+        style={showWarningBanner ? { marginTop: '3rem' } : {}}
       >
         {mazeData && playerPosition && (
           <div
@@ -381,7 +502,10 @@ const GamePage = () => {
         )}
       </div>
 
-      <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col gap-4">
+      <div 
+        className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col gap-4"
+        style={showWarningBanner ? { marginTop: '3rem' } : {}}
+      >
         <div className="flex justify-between items-center p-2 border-2 border-muted rounded-md bg-black/30">
           <div className="flex items-center gap-4">
             <span className="text-accent font-bold tracking-widest">
@@ -400,7 +524,13 @@ const GamePage = () => {
               : "00:00"}
           </span>
         </div>
-        <CodeEditor code={code} setCode={setCode} onKeyDown={handleKeyDown} />
+        <CodeEditor 
+          code={code} 
+          setCode={setCode} 
+          onKeyDown={handleKeyDown} 
+          isGameActive={!!mazeData}
+          onBlockAction={showWarningBannerTemporarily}
+        />
       </div>
     </div>
   );
