@@ -274,6 +274,11 @@ const GamePage = () => {
     [code, executeCommands]
   );
 
+  const handleLogout = () => {
+    localStorage.removeItem("playerInfo");
+    window.location.reload(); // Reload to show RegisterPage
+  };
+
   if (hasWon) {
     return <WinOverlay isEventLive={isEventLive} />;
   }
@@ -306,9 +311,17 @@ const GamePage = () => {
 
       <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col gap-4">
         <div className="flex justify-between items-center p-2 border-2 border-muted rounded-md bg-black/30">
-          <span className="text-accent font-bold tracking-widest">
-            {isEventLive ? "MAIN EVENT" : "PRACTICE MODE"}
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-accent font-bold tracking-widest">
+              {isEventLive ? "MAIN EVENT" : "PRACTICE MODE"}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1 text-xs bg-muted hover:bg-muted/80 text-foreground font-bold tracking-wider border border-border rounded transition-all duration-200 hover:shadow-[0_0_8px_rgba(75,0,130,0.5)] uppercase"
+            >
+              LOGOUT
+            </button>
+          </div>
           <span className="text-primary font-code text-2xl">
             {isEventLive
               ? new Date(timer * 1000).toISOString().substr(14, 5)
