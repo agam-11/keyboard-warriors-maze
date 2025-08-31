@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// Helper function to format time from seconds to MM:SS
+// Helper function to format time from seconds to a MM:SS string
 const formatTime = (totalSeconds) => {
   if (typeof totalSeconds !== "number" || totalSeconds < 0) {
     return "00:00";
@@ -36,10 +36,10 @@ const LeaderboardPage = () => {
       }
     };
 
-    fetchLeaderboard(); // Fetch initially
-    const interval = setInterval(fetchLeaderboard, 5000); // Poll every 5 seconds
+    fetchLeaderboard(); // Fetch the data immediately on component load
+    const interval = setInterval(fetchLeaderboard, 5000); // Set up polling to refresh every 5 seconds
 
-    return () => clearInterval(interval); // Cleanup on component unmount
+    return () => clearInterval(interval); // Clean up the interval when the component is unmounted
   }, []);
 
   if (loading) {
@@ -82,15 +82,12 @@ const LeaderboardPage = () => {
                   {index + 1}
                 </td>
                 <td className="p-4 text-left text-foreground font-bold">
-                  {/* FIX: Safely access the email */}
-                  {entry.profiles?.email || "Anonymous"}
+                  {entry.player_name || "Anonymous"}
                 </td>
                 <td className="p-4 text-center font-code text-primary text-2xl">
-                  {/* FIX: Safely format the time */}
                   {formatTime(entry.finish_time_seconds)}
                 </td>
                 <td className="p-4 text-center text-foreground/50 text-sm hidden md:table-cell">
-                  {/* FIX: Safely format the date, providing a fallback */}
                   {entry.created_at
                     ? new Date(entry.created_at).toLocaleString()
                     : "N/A"}

@@ -1,25 +1,24 @@
-// client/src/App.jsx
-
 import React from "react";
 import GamePage from "./components/GamePage";
 import LeaderboardPage from "./components/LeaderboardPage";
-import LoginPage from "./components/LoginPage"; // Import the new LoginPage
+import RegisterPage from "./components/RegisterPage"; // Import the new RegisterPage
 
 function App() {
-  const token = localStorage.getItem("supabase-token");
+  // Check for player information in local storage instead of a token.
+  const playerInfo = localStorage.getItem("playerInfo");
 
-  // If no token, force user to log in
-  if (!token) {
-    return <LoginPage />;
+  // If there is no player information, the user must register first.
+  if (!playerInfo) {
+    return <RegisterPage />;
   }
 
-  // If logged in, show the correct page based on the URL
+  // If the user has registered, show the correct page based on the URL.
   const path = window.location.pathname;
-
   if (path === "/leaderboard") {
     return <LeaderboardPage />;
   }
 
+  // By default, show the game page.
   return <GamePage />;
 }
 
