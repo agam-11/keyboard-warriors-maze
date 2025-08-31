@@ -8,7 +8,7 @@ app.use(
   cors({
     origin: "*", // Allow all origins
     methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
+    allowedHeaders: "Content-Type,Authorization,Cache-Control,Pragma",
   })
 );
 app.use(express.json());
