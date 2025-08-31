@@ -14,16 +14,35 @@ const practiceMaze = [
   [1, 0, 0, 0, 0, 0, "E"],
 ];
 
-const WinOverlay = ({ isEventLive }) => (
-  <div className="absolute inset-0 bg-background z-20 flex items-center justify-center">
-    <h1
-      className="text-7xl font-extrabold text-accent animate-glitch"
-      data-text={isEventLive ? "ACCESS GRANTED" : "PRACTICE COMPLETE"}
-    >
-      {isEventLive ? "ACCESS GRANTED" : "PRACTICE COMPLETE"}
-    </h1>
-  </div>
-);
+const WinOverlay = ({ isEventLive }) => {
+  useEffect(() => {
+    if (isEventLive) {
+      // Auto-logout after 5 seconds for main event completion
+      const logoutTimer = setTimeout(() => {
+        localStorage.removeItem("playerInfo");
+        window.location.reload();
+      }, 5000);
+      
+      return () => clearTimeout(logoutTimer);
+    }
+  }, [isEventLive]);
+
+  return (
+    <div className="absolute inset-0 bg-background z-20 flex items-center justify-center flex-col">
+      <h1
+        className="text-7xl font-extrabold text-accent animate-glitch"
+        data-text={isEventLive ? "ACCESS GRANTED" : "PRACTICE COMPLETE"}
+      >
+        {isEventLive ? "ACCESS GRANTED" : "PRACTICE COMPLETE"}
+      </h1>
+      {isEventLive && (
+        <p className="text-lg text-foreground mt-4 opacity-70">
+          Redirecting in 5 seconds...
+        </p>
+      )}
+    </div>
+  );
+};
 
 const GamePage = () => {
   const [mazeData, setMazeData] = useState(null);
