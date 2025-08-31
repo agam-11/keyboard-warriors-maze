@@ -14,8 +14,9 @@ const cellTypeClasses = {
  * Maze Component
  * Renders a grid-based maze from a 2D array blueprint.
  * @param {Array<Array<number|string>>} mazeData - The 2D array representing the maze.
+ * @param {object} playerPosition - The player's current position { row, col }.
  */
-const Maze = ({ mazeData }) => {
+const Maze = ({ mazeData, playerPosition }) => {
   if (!mazeData || mazeData.length === 0) {
     return <div>Loading Maze...</div>;
   }
@@ -32,18 +33,36 @@ const Maze = ({ mazeData }) => {
       }}
     >
       {mazeData.map((row, rowIndex) =>
-        row.map((cell, colIndex) => (
-          <div
-            key={`${rowIndex}-${colIndex}`}
-            // The individual cell's background color covers the grid container's background.
-            className={`flex items-center justify-center ${
-              cellTypeClasses[cell] || "bg-black"
-            }`}
-            // REMOVED: The inline border style is no longer needed.
-          >
-            {/* You could render icons or text here in the future */}
-          </div>
-        ))
+        row.map((cell, colIndex) => {
+          // Check if player is in this cell
+          const isPlayerHere = playerPosition && 
+            playerPosition.row === rowIndex && 
+            playerPosition.col === colIndex;
+            
+          return (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              // The individual cell's background color covers the grid container's background.
+              className={`flex items-center justify-center ${
+                cellTypeClasses[cell] || "bg-black"
+              } relative`}
+            >
+              {/* Render Pacman if player is in this cell */}
+              {isPlayerHere && (
+                <div
+                  className="bg-foreground rounded-full"
+                  style={{
+                    width: "60%",
+                    height: "60%",
+                    clipPath:
+                      "polygon(0% 0%, 100% 0%, 100% 40%, 50% 50%, 100% 60%, 100% 100%, 0% 100%)",
+                    boxShadow: "0 0 2px rgba(240, 230, 140, 0.3)",
+                  }}
+                />
+              )}
+            </div>
+          );
+        })
       )}
     </div>
   );

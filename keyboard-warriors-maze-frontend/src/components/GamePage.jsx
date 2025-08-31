@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Maze from "./Maze";
 import CodeEditor from "./CodeEditor";
-import Player from "./Player";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -107,8 +106,23 @@ const GamePage = () => {
 
   const handleResize = useCallback(() => {
     if (mazeContainerRef.current && mazeData) {
-      const newCellSize =
-        mazeContainerRef.current.offsetWidth / mazeData[0].length;
+      // Get the actual size of a rendered maze cell
+      const mazeElement = mazeContainerRef.current.querySelector('.grid');
+      if (mazeElement) {
+        const firstCell = mazeElement.children[0];
+        if (firstCell) {
+          const cellRect = firstCell.getBoundingClientRect();
+          cellSize.current = cellRect.width;
+          setPlayerPosition((prev) => ({ ...prev }));
+          return;
+        }
+      }
+      
+      // Fallback to calculated size if DOM measurement fails
+      const containerWidth = mazeContainerRef.current.offsetWidth;
+      const totalGaps = (mazeData[0].length - 1) * 1; // 1px gap between cells
+      const availableWidth = containerWidth - totalGaps;
+      const newCellSize = availableWidth / mazeData[0].length;
       cellSize.current = newCellSize;
       setPlayerPosition((prev) => ({ ...prev }));
     }
@@ -285,8 +299,7 @@ const GamePage = () => {
               aspectRatio: `${mazeData[0].length}/${mazeData.length}`,
             }}
           >
-            <Maze mazeData={mazeData} />
-            <Player position={playerPosition} cellSize={cellSize.current} />
+            <Maze mazeData={mazeData} playerPosition={playerPosition} />
           </div>
         )}
       </div>
