@@ -20,40 +20,72 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- Hardcoded Maze Collection ---
 const mazes = {
   1: [
-    ["S", 0, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 1, 0, "E"],
-    [1, 1, 1, 1, 1, 1, 1],
+    ["S", 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "E"],
   ],
+
+  // Maze 2: "The Gridlock" - A symmetrical-looking layout with many parallel paths designed to confuse.
   2: [
-    ["S", 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, "E"],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    ["S", 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, "E"],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   ],
+
+  // Maze 3: "The Labyrinth" - Very few straight lines. Lots of tight turns and a large central block to navigate around.
   3: [
-    [1, 1, 1, 1, 1, 1, "E"],
-    [1, 0, 0, 0, 1, 0, 0],
-    [1, 0, 1, 0, 1, 0, 1],
-    ["S", 0, 1, 0, 0, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, "S", 0, 0, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, "E", 1, 1],
   ],
+
+  // Maze 4: "The Gauntlet" - A massive 15x15 beast with long, narrow corridors that demand precision.
   4: [
-    ["S", 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, "E"],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, "E", 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    ["S", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   ],
 };
 
@@ -65,10 +97,10 @@ app.post("/api/event-state", async (req, res) => {
       .from("event_control")
       .select("*")
       .single();
-    
+
     console.log("Event control data:", eventData);
     console.log("Event control error:", eventError);
-    
+
     if (eventError) {
       console.error("Error fetching event control:", eventError);
       // If no event control data, default to practice mode
@@ -81,8 +113,13 @@ app.post("/api/event-state", async (req, res) => {
     }
 
     const isEventLive = !eventData.is_practice_active;
-    console.log("Is event live:", isEventLive, "Practice active:", eventData.is_practice_active);
-    
+    console.log(
+      "Is event live:",
+      isEventLive,
+      "Practice active:",
+      eventData.is_practice_active
+    );
+
     let hasCompleted = false;
 
     if (isEventLive && playerName) {
@@ -111,8 +148,12 @@ app.post("/api/event-state", async (req, res) => {
 
 app.post("/api/finish", async (req, res) => {
   const { playerName, contactNumber, time } = req.body;
-  console.log("Score submission received:", { playerName, contactNumber, time });
-  
+  console.log("Score submission received:", {
+    playerName,
+    contactNumber,
+    time,
+  });
+
   if (!playerName || typeof time === "undefined") {
     console.log("Invalid submission - missing playerName or time");
     return res
@@ -131,7 +172,7 @@ app.post("/api/finish", async (req, res) => {
       console.error("Error checking existing scores:", checkError);
       throw checkError;
     }
-    
+
     if (existing && existing.length > 0) {
       console.log("Score already exists for player:", playerName);
       return res
@@ -147,12 +188,12 @@ app.post("/api/finish", async (req, res) => {
         finish_time_seconds: time,
       },
     ]);
-    
+
     if (error) {
       console.error("Error inserting score:", error);
       throw error;
     }
-    
+
     console.log("Score inserted successfully for:", playerName);
     res.status(200).json({ success: true });
   } catch (error) {
