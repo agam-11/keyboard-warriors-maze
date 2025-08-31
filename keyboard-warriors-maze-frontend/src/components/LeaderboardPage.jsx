@@ -25,19 +25,22 @@ const LeaderboardPage = () => {
     setLoading(true);
     setError("");
     try {
-      console.log("Manual refresh - fetching from:", `${API_URL}/api/leaderboard`);
+      console.log(
+        "Manual refresh - fetching from:",
+        `${API_URL}/api/leaderboard`
+      );
       const response = await fetch(`${API_URL}/api/leaderboard`, {
         method: "GET",
         headers: {
           "Cache-Control": "no-cache",
-          "Pragma": "no-cache",
+          Pragma: "no-cache",
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log("Manual refresh - data received:", data);
       setLeaderboard(data);
@@ -54,23 +57,25 @@ const LeaderboardPage = () => {
       try {
         console.log("Fetching leaderboard from:", `${API_URL}/api/leaderboard`);
         console.log("API_URL value:", API_URL);
-        
+
         const response = await fetch(`${API_URL}/api/leaderboard`, {
           method: "GET",
           headers: {
             "Cache-Control": "no-cache",
-            "Pragma": "no-cache",
+            Pragma: "no-cache",
           },
         });
-        
+
         console.log("Leaderboard response status:", response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Leaderboard fetch failed:", errorText);
-          throw new Error(`Failed to fetch leaderboard data: ${response.status}`);
+          throw new Error(
+            `Failed to fetch leaderboard data: ${response.status}`
+          );
         }
-        
+
         const data = await response.json();
         console.log("Leaderboard data received:", data);
         console.log("Number of entries:", data.length);
@@ -120,9 +125,9 @@ const LeaderboardPage = () => {
           >
             {loading ? "..." : "[REFRESH]"}
           </button>
-          <span className="text-xs text-muted">
+          {/* <span className="text-xs text-muted">
             API: {API_URL} | Entries: {leaderboard.length}
-          </span>
+          </span> */}
         </div>
       </div>
       <div className="max-w-4xl mx-auto overflow-hidden border-2 border-primary rounded-lg">
