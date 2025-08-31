@@ -20,16 +20,64 @@ const LeaderboardPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Manual refresh function for debugging
+  const manualRefresh = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      console.log("Manual refresh - fetching from:", `${API_URL}/api/leaderboard`);
+      const response = await fetch(`${API_URL}/api/leaderboard`, {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Manual refresh - data received:", data);
+      setLeaderboard(data);
+    } catch (err) {
+      console.error("Manual refresh error:", err);
+      setError(`Manual refresh failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/leaderboard`);
+        console.log("Fetching leaderboard from:", `${API_URL}/api/leaderboard`);
+        console.log("API_URL value:", API_URL);
+        
+        const response = await fetch(`${API_URL}/api/leaderboard`, {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+          },
+        });
+        
+        console.log("Leaderboard response status:", response.status);
+        
         if (!response.ok) {
-          throw new Error("Failed to fetch leaderboard data.");
+          const errorText = await response.text();
+          console.error("Leaderboard fetch failed:", errorText);
+          throw new Error(`Failed to fetch leaderboard data: ${response.status}`);
         }
+        
         const data = await response.json();
+        console.log("Leaderboard data received:", data);
+        console.log("Number of entries:", data.length);
         setLeaderboard(data);
+        setError(""); // Clear any previous errors
       } catch (err) {
+        console.error("Leaderboard fetch error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -60,9 +108,23 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines">
-      <h1 className="text-5xl font-extrabold text-center text-primary mb-8 tracking-widest">
-        LEADERBOARD
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-5xl font-extrabold text-primary tracking-widest">
+          LEADERBOARD
+        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={manualRefresh}
+            disabled={loading}
+            className="px-4 py-2 bg-primary hover:bg-accent text-background font-bold tracking-wider border border-border rounded transition-all duration-200 hover:shadow-[0_0_8px_rgba(255,140,0,0.5)] uppercase disabled:opacity-50"
+          >
+            {loading ? "..." : "[REFRESH]"}
+          </button>
+          <span className="text-xs text-muted">
+            API: {API_URL} | Entries: {leaderboard.length}
+          </span>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto overflow-hidden border-2 border-primary rounded-lg">
         <table className="w-full text-left">
           <thead className="bg-primary/20 text-accent uppercase tracking-wider text-sm">

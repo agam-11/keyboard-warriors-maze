@@ -65,9 +65,24 @@ app.post("/api/event-state", async (req, res) => {
       .from("event_control")
       .select("*")
       .single();
-    if (eventError) throw eventError;
+    
+    console.log("Event control data:", eventData);
+    console.log("Event control error:", eventError);
+    
+    if (eventError) {
+      console.error("Error fetching event control:", eventError);
+      // If no event control data, default to practice mode
+      return res.json({
+        isEventLive: false,
+        startTime: null,
+        maze: mazes[1], // Default maze
+        hasCompleted: false,
+      });
+    }
 
     const isEventLive = !eventData.is_practice_active;
+    console.log("Is event live:", isEventLive, "Practice active:", eventData.is_practice_active);
+    
     let hasCompleted = false;
 
     if (isEventLive && playerName) {
@@ -96,7 +111,10 @@ app.post("/api/event-state", async (req, res) => {
 
 app.post("/api/finish", async (req, res) => {
   const { playerName, contactNumber, time } = req.body;
+  console.log("Score submission received:", { playerName, contactNumber, time });
+  
   if (!playerName || typeof time === "undefined") {
+    console.log("Invalid submission - missing playerName or time");
     return res
       .status(400)
       .json({ error: "Player name and time are required." });
@@ -109,13 +127,19 @@ app.post("/api/finish", async (req, res) => {
       .eq("player_name", playerName)
       .limit(1);
 
-    if (checkError) throw checkError;
+    if (checkError) {
+      console.error("Error checking existing scores:", checkError);
+      throw checkError;
+    }
+    
     if (existing && existing.length > 0) {
+      console.log("Score already exists for player:", playerName);
       return res
         .status(409)
         .json({ error: "Score already submitted for this player." });
     }
 
+    console.log("Inserting new score for:", playerName);
     const { error } = await supabase.from("leaderboard").insert([
       {
         player_name: playerName,
@@ -123,9 +147,16 @@ app.post("/api/finish", async (req, res) => {
         finish_time_seconds: time,
       },
     ]);
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Error inserting score:", error);
+      throw error;
+    }
+    
+    console.log("Score inserted successfully for:", playerName);
     res.status(200).json({ success: true });
   } catch (error) {
+    console.error("Score submission error:", error);
     res.status(500).json({ error: "Could not save score." });
   }
 });

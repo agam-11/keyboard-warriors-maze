@@ -58,16 +58,21 @@ const GamePage = () => {
         });
         if (!response.ok) throw new Error("Failed to fetch event state");
         const data = await response.json();
+        console.log("Event state data:", data);
+        console.log("API_URL being used:", API_URL);
 
         if (data.hasCompleted) {
+          console.log("Player has already completed the event");
           setIsEventLive(true);
           setHasWon(true);
           return;
         }
 
         setIsEventLive(data.isEventLive);
+        console.log("Event is live:", data.isEventLive);
 
         if (data.isEventLive) {
+          console.log("Setting up main event with maze:", data.maze);
           setMazeData(data.maze);
           const startTime = new Date(data.startTime).getTime();
           const updateTimer = () => {
@@ -135,12 +140,26 @@ const GamePage = () => {
   }, [handleResize]);
 
   const submitScore = useCallback(async () => {
-    if (!isEventLive || !playerInfo || hasSubmitted.current) return;
-    hasSubmitted.current = true;
+    console.log("submitScore called - checking conditions...");
+    console.log("isEventLive:", isEventLive);
+    console.log("playerInfo exists:", !!playerInfo);
+    console.log("hasSubmitted:", hasSubmitted.current);
+    
+    if (!isEventLive || !playerInfo || hasSubmitted.current) {
+      console.log("submitScore returning early due to conditions");
+      return;
+    }
+
+    console.log("All conditions met, making API call...");
 
     try {
-      // CHANGE 3: Send player info in the request body instead of a token
-      await fetch(`${API_URL}/api/finish`, {
+      console.log("Submitting score:", {
+        playerName: playerInfo.name,
+        contactNumber: playerInfo.contact,
+        time: timer,
+      });
+
+      const response = await fetch(`${API_URL}/api/finish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,6 +168,24 @@ const GamePage = () => {
           time: timer,
         }),
       });
+      
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      const result = await response.json();
+      console.log("Response body:", result);
+      
+      if (!response.ok) {
+        console.error("Score submission failed:", result.error);
+        if (response.status === 409) {
+          console.log("Score already submitted for this player");
+        }
+        return;
+      }
+
+      // Only set the submission lock AFTER successful submission
+      hasSubmitted.current = true;
+      console.log("Score submitted successfully:", result);
     } catch (error) {
       console.error("Failed to submit score:", error);
     }
@@ -182,13 +219,29 @@ const GamePage = () => {
           newPos.row === endPosition.row &&
           newPos.col === endPosition.col
         ) {
+          console.log("Player reached the end!");
+          console.log("Event is live:", isEventLive);
+          console.log("Has submitted:", hasSubmitted.current);
+          console.log("Player info:", playerInfo);
+          console.log("Timer:", timer);
+          
           // FIX: Check the lock before submitting
           if (!hasSubmitted.current) {
-            hasSubmitted.current = true; // Set the lock immediately
             setHasWon(true);
             if (isEventLive) {
-              // Only submit score if it's the main event
-              submitScore();
+              console.log("Submitting score because event is live");
+              console.log("About to call submitScore function...");
+              
+              // Call submitScore and handle the promise
+              submitScore()
+                .then(() => {
+                  console.log("submitScore completed successfully");
+                })
+                .catch((error) => {
+                  console.error("submitScore failed:", error);
+                });
+            } else {
+              console.log("Not submitting score - event is not live (practice mode)");
             }
           }
         }
